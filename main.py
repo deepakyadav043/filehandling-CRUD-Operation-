@@ -1,5 +1,4 @@
-### project -->> CURD OPERATION
-
+### project -->> CURD OPERATION using Exception handling 
 from pathlib import Path 
 import os
 
