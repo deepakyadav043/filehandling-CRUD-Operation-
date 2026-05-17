@@ -1,567 +1,594 @@
+### project -->> CRUD OPERATION using Exception handling (Streamlit UI)
 import streamlit as st
 from pathlib import Path
 import os
-import shutil
 
-# ─── Page Config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="File Manager",
-    page_icon="🗂️",
+    page_icon="📁",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# ─── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'Syne', sans-serif;
-    background-color: #0e0e0e;
-    color: #f0f0f0;
+html, body, [class*="css"], .stApp {
+    font-family: 'Space Grotesk', sans-serif;
+    background-color: #0f0f0f !important;
+    color: #d4d4d4;
 }
 
-.stApp { background-color: #0e0e0e; }
-
-h1, h2, h3 { font-family: 'Syne', sans-serif; font-weight: 800; }
-
-.title-block {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    border: 1px solid #e94560;
-    border-radius: 12px;
-    padding: 2rem 2.5rem;
-    margin-bottom: 2rem;
+/* ── Grid background ── */
+.stApp {
+    background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px) !important;
+    background-size: 32px 32px !important;
 }
-.title-block h1 { color: #e94560; font-size: 2.5rem; margin: 0; letter-spacing: -1px; }
-.title-block p  { color: #a0a0b0; margin: 0.4rem 0 0; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
 
-.file-card {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 8px;
-    padding: 0.6rem 1rem;
-    margin: 0.25rem 0;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.82rem;
-    color: #c8c8d8;
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background-color: #0a0a0a !important;
+    border-right: 1px solid #1e1e1e !important;
+}
+[data-testid="stSidebar"] .stRadio > label { display: none !important; }
+[data-testid="stSidebar"] .stRadio label {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.78rem !important;
+    color: #555 !important;
+    padding: 0.3rem 0.2rem !important;
+    cursor: pointer !important;
+    transition: color 0.15s !important;
+    display: block !important;
+}
+[data-testid="stSidebar"] .stRadio label:hover { color: #aaa !important; }
+[data-testid="stSidebar"] .stRadio label:has(input:checked) { color: #e2c97e !important; }
+
+/* ── Header ── */
+.header {
+    border: 1px solid #1e1e1e;
+    border-top: 3px solid #e2c97e;
+    border-radius: 0 0 12px 12px;
+    padding: 1.4rem 2rem;
+    margin-bottom: 1.8rem;
+    background: #111;
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 1.2rem;
 }
-.file-card.folder { border-left: 3px solid #f5a623; color: #f5a623; }
-.file-card.file   { border-left: 3px solid #4ecdc4; }
-
-.folder-contents-card {
-    background: #141414;
+.header-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+.header-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #e2c97e;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+}
+.header-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: #444;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 3px;
+}
+.header-badge {
+    margin-left: auto;
+    background: #1a1a1a;
     border: 1px solid #2a2a2a;
-    border-left: 3px solid #a78bfa;
-    border-radius: 8px;
-    padding: 0.6rem 1rem;
-    margin: 0.2rem 0 0.2rem 1.5rem;
+    border-radius: 6px;
+    padding: 0.35rem 0.8rem;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.80rem;
-    color: #c8c8d8;
+    font-size: 0.68rem;
+    color: #e2c97e;
+    letter-spacing: 0.5px;
 }
 
-.folder-stats {
-    background: #1a1a2e;
-    border: 1px solid #2a2a4e;
-    border-radius: 8px;
-    padding: 1rem 1.5rem;
-    margin-bottom: 1rem;
+/* ── Section label ── */
+.sec {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 0.85rem;
-    color: #a0a0b0;
-}
-.folder-stats span { color: #a78bfa; font-weight: 700; }
-
-.section-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 2px;
-    color: #e94560;
+    font-size: 0.6rem;
+    letter-spacing: 2.5px;
+    color: #333;
     text-transform: uppercase;
     margin-bottom: 0.5rem;
 }
 
-.success-msg { color: #4ecdc4; font-weight: 700; }
-.error-msg   { color: #e94560; font-weight: 700; }
-.warn-msg    { color: #f5a623; font-weight: 700; }
-
-/* Sidebar */
-[data-testid="stSidebar"] {
-    background-color: #111111 !important;
-    border-right: 1px solid #2a2a2a;
-}
-[data-testid="stSidebar"] .stRadio label { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
-
-/* Inputs */
-input, textarea {
-    background-color: #1a1a1a !important;
-    color: #f0f0f0 !important;
-    border: 1px solid #333 !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    border-radius: 6px !important;
-}
-
-/* Buttons */
-.stButton > button {
-    background: #e94560;
-    color: #fff;
-    border: none;
+/* ── File tree ── */
+.tree-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0.35rem 0.5rem;
     border-radius: 6px;
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    padding: 0.5rem 1.5rem;
-    transition: background 0.2s;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    margin: 1px 0;
 }
-.stButton > button:hover { background: #c73652; }
+.tree-row:hover { background: #161616; }
+.tree-folder { color: #e2c97e; }
+.tree-file   { color: #7eb8e2; }
+.tree-dot    { width: 4px; height: 4px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.tree-size   { margin-left: auto; color: #2a2a2a; font-size: 0.6rem; }
 
-/* Divider */
-hr { border-color: #2a2a2a; }
+/* ── Sidebar brand ── */
+.brand {
+    padding: 1.2rem 1rem 1rem;
+    border-bottom: 1px solid #1a1a1a;
+    margin-bottom: 0.6rem;
+}
+.brand-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #e2c97e;
+    letter-spacing: -0.3px;
+}
+.brand-ver {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: #2d2d2d;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
 
-/* Radio buttons */
-div[data-testid="stRadio"] > label { color: #a0a0b0; }
+/* ── Feedback messages ── */
+.fb {
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+    margin: 0.5rem 0;
+}
+.fb-ok   { background: #0d1f13; border: 1px solid #1a4228; color: #4ade80; }
+.fb-err  { background: #1f0d0d; border: 1px solid #421a1a; color: #f87171; }
+.fb-warn { background: #1f190d; border: 1px solid #423310; color: #fbbf24; }
+
+/* ── Inputs ── */
+.stTextInput input, .stTextArea textarea {
+    background: #111 !important;
+    color: #d4d4d4 !important;
+    border: 1px solid #222 !important;
+    border-radius: 8px !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.82rem !important;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+    border-color: #e2c97e !important;
+    box-shadow: 0 0 0 2px rgba(226,201,126,0.1) !important;
+}
+.stTextInput label, .stTextArea label, .stSelectbox label {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.65rem !important;
+    color: #444 !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase !important;
+}
+
+/* ── Select box ── */
+.stSelectbox [data-baseweb="select"] > div {
+    background: #111 !important;
+    border: 1px solid #222 !important;
+    border-radius: 8px !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.82rem !important;
+    color: #d4d4d4 !important;
+}
+
+/* ── Buttons ── */
+.stButton > button {
+    background: #1a1a1a !important;
+    color: #e2c97e !important;
+    border: 1px solid #2a2a2a !important;
+    border-radius: 8px !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    padding: 0.5rem 1.4rem !important;
+    transition: all 0.18s !important;
+    letter-spacing: 0.2px !important;
+}
+.stButton > button:hover {
+    background: #222 !important;
+    border-color: #e2c97e !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 16px rgba(226,201,126,0.1) !important;
+}
+.stButton > button[kind="primary"] {
+    background: #1f0d0d !important;
+    color: #f87171 !important;
+    border-color: #3a1515 !important;
+}
+.stButton > button[kind="primary"]:hover {
+    background: #2a1010 !important;
+    border-color: #f87171 !important;
+    box-shadow: 0 4px 16px rgba(248,113,113,0.1) !important;
+}
+
+/* ── Tabs ── */
+.stTabs [data-baseweb="tab-list"] {
+    background: #111 !important;
+    border: 1px solid #1e1e1e !important;
+    border-radius: 8px !important;
+    padding: 3px !important;
+    gap: 2px !important;
+}
+.stTabs [data-baseweb="tab"] {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.72rem !important;
+    color: #444 !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+}
+.stTabs [aria-selected="true"] {
+    background: #1e1e1e !important;
+    color: #e2c97e !important;
+}
+
+/* ── Radio (main area) ── */
+.stRadio label {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.78rem !important;
+    color: #888 !important;
+}
+
+/* ── Subheader ── */
+h2, h3 {
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-weight: 600 !important;
+    color: #aaa !important;
+    font-size: 1rem !important;
+    margin-bottom: 0.8rem !important;
+    letter-spacing: -0.2px !important;
+}
+
+/* ── Code ── */
+.stCodeBlock { border: 1px solid #1e1e1e !important; border-radius: 8px !important; }
+
+/* ── Alert ── */
+.stAlert { border-radius: 8px !important; font-family: 'JetBrains Mono', monospace !important; font-size: 0.75rem !important; }
+
+/* ── Divider ── */
+hr { border-color: #1a1a1a !important; margin: 0.6rem 0 !important; }
+
+/* ── Caption ── */
+.stCaption, [data-testid="stCaptionContainer"] p {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.68rem !important;
+    color: #333 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
 
-# ─── Helpers ───────────────────────────────────────────────────────────────────
-def get_all_items():
-    p = Path('')
-    return sorted(p.rglob('*'))
+# ── Helpers (same logic as your CLI) ────────────────────────────────────────────
+def readfileandfolder():
+    """Same as your CLI readfileandfolder — lists current dir"""
+    try:
+        p = Path.cwd()
+        return list(p.iterdir())
+    except Exception as e:
+        st.error(str(e))
+        return []
 
-def render_file_tree():
-    items = get_all_items()
+def fmt_size(n):
+    if n < 1024: return f"{n}B"
+    if n < 1024**2: return f"{n/1024:.1f}KB"
+    return f"{n/1024**2:.2f}MB"
+
+def msg(text, kind="ok"):
+    cls = {"ok": "fb-ok", "err": "fb-err", "warn": "fb-warn"}
+    st.markdown(f'<div class="fb {cls.get(kind,"fb-ok")}">{text}</div>', unsafe_allow_html=True)
+
+def render_tree():
+    items = readfileandfolder()
     if not items:
-        st.markdown('<div class="file-card">📭 No files or folders found</div>', unsafe_allow_html=True)
+        st.markdown('<div class="tree-row tree-file"><span class="tree-dot"></span>empty</div>', unsafe_allow_html=True)
         return
-    for item in items:
+    for item in sorted(items):
         if item.is_dir():
-            st.markdown(f'<div class="file-card folder">📁 {item}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="tree-row tree-folder"><span class="tree-dot"></span>📁 {item.name}</div>', unsafe_allow_html=True)
         else:
-            st.markdown(f'<div class="file-card file">📄 {item}</div>', unsafe_allow_html=True)
-
-def msg(text, kind="success"):
-    css = {"success": "success-msg", "error": "error-msg", "warn": "warn-msg"}
-    st.markdown(f'<p class="{css.get(kind, "success-msg")}">{text}</p>', unsafe_allow_html=True)
-
-def get_folder_size(folder: Path) -> int:
-    """Return total size in bytes of all files inside a folder."""
-    return sum(f.stat().st_size for f in folder.rglob('*') if f.is_file())
-
-def format_size(size_bytes: int) -> str:
-    if size_bytes < 1024:
-        return f"{size_bytes} B"
-    elif size_bytes < 1024 ** 2:
-        return f"{size_bytes / 1024:.1f} KB"
-    else:
-        return f"{size_bytes / (1024 ** 2):.2f} MB"
+            sz = fmt_size(item.stat().st_size)
+            st.markdown(f'<div class="tree-row tree-file"><span class="tree-dot"></span>📄 {item.name}<span class="tree-size">{sz}</span></div>', unsafe_allow_html=True)
 
 
-# ─── Title ─────────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="title-block">
-  <h1>🗂️ File Manager</h1>
-  <p>CRUD operations · files & folders · powered by pathlib</p>
-</div>
-""", unsafe_allow_html=True)
+# ── Sidebar ──────────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("""
+    <div class="brand">
+        <div class="brand-name">📁 File Manager</div>
+        <div class="brand-ver">CRUD · Exception Handling · pathlib</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-col_sidebar, col_main = st.columns([1, 3])
+    st.markdown('<div class="sec" style="padding:0 0.4rem">Operations</div>', unsafe_allow_html=True)
 
-# ─── Sidebar / Operation Selector ──────────────────────────────────────────────
-with col_sidebar:
-    st.markdown('<div class="section-label">Operations</div>', unsafe_allow_html=True)
-    operation = st.radio("", [
-        "📄 Create File",
-        "👁️ Read File",
-        "✏️ Update File",
-        "🗑️ Delete File",
-        "🔤 Rename File",
-        "📁 Create Folder",
-        "👁️‍🗨️ Read Folder",
-        "📝 Update Folder",
-        "🔤 Rename Folder",
-        "❌ Delete Folder",
-        "📁➕ Create File in Folder",
+    operation = st.radio("menu", [
+        "1 · Create File",
+        "2 · Read File",
+        "3 · Update File",
+        "4 · Delete File",
+        "5 · Rename File",
+        "──────────",
+        "6 · Create Folder",
+        "7 · Rename Folder",
+        "8 · Delete Folder",
+        "──────────",
+        "9 · Create File in Folder",
     ], label_visibility="collapsed")
 
     st.markdown("---")
-    st.markdown('<div class="section-label">Explorer</div>', unsafe_allow_html=True)
-    render_file_tree()
+    st.markdown('<div class="sec" style="padding:0 0.4rem">Current Directory</div>', unsafe_allow_html=True)
+    render_tree()
 
 
-# ─── Main Panel ────────────────────────────────────────────────────────────────
-with col_main:
+# ── Header ───────────────────────────────────────────────────────────────────────
+st.markdown(f"""
+<div class="header">
+    <div class="header-icon">📁</div>
+    <div>
+        <div class="header-title">File Manager</div>
+        <div class="header-sub">CRUD · Exception Handling · pathlib engine</div>
+    </div>
+    <div class="header-badge">{operation[:25]}</div>
+</div>
+""", unsafe_allow_html=True)
 
-    # ── 1. Create File ──────────────────────────────────────────────────────────
-    if operation == "📄 Create File":
-        st.subheader("Create a New File")
-        file_name = st.text_input("File name (e.g. notes.txt)")
-        content   = st.text_area("File content", height=150)
-        if st.button("Create File"):
+# skip dividers
+if "──" in operation:
+    st.markdown('<p style="font-family:\'JetBrains Mono\',monospace;font-size:0.8rem;color:#2a2a2a;text-align:center;padding:2rem">← select an operation</p>', unsafe_allow_html=True)
+    st.stop()
+
+
+# ── 1. Create File ── (same as your create_file())  ─────────────────────────────
+elif operation == "1 · Create File":
+    st.subheader("Create File")
+    file_name = st.text_input("Enter name of your file", placeholder="e.g. hello.txt")
+    content   = st.text_area("Enter your file content", height=140, placeholder="type content here...")
+
+    if st.button("Create File"):
+        try:
+            p = Path(file_name)
             if not file_name:
-                msg("⚠️ Please enter a file name.", "warn")
+                msg("⚠ Enter a file name", "warn")
+            elif p.exists():
+                msg("FILE ALREADY EXISTS", "warn")
             else:
+                with open(file_name, 'w') as file:
+                    file.write(content)
+                msg("FILE ADDED !")
+                st.rerun()
+        except Exception as e:
+            msg(f"✗ {e}", "err")
+
+
+# ── 2. Read File ── (same as your read_file()) ───────────────────────────────────
+elif operation == "2 · Read File":
+    st.subheader("Read File")
+    items = [str(i) for i in readfileandfolder() if Path(i).is_file()]
+    if not items:
+        msg("No files found", "warn")
+    else:
+        file_name = st.selectbox("Select file to read", items)
+        if st.button("Read File"):
+            try:
                 p = Path(file_name)
                 if p.exists():
-                    msg("⚠️ File already exists!", "warn")
-                else:
-                    try:
-                        p.parent.mkdir(parents=True, exist_ok=True)
-                        p.write_text(content)
-                        msg(f"✅ '{file_name}' created successfully!")
-                        st.rerun()
-                    except Exception as e:
-                        msg(f"❌ Error: {e}", "error")
-
-    # ── 2. Read File ────────────────────────────────────────────────────────────
-    elif operation == "👁️ Read File":
-        st.subheader("Read a File")
-        items = [str(i) for i in get_all_items() if Path(i).is_file()]
-        if not items:
-            msg("No files available.", "warn")
-        else:
-            file_name = st.selectbox("Select file to read", items)
-            if st.button("Read File"):
-                try:
-                    content = Path(file_name).read_text()
-                    st.markdown('<div class="section-label">Content</div>', unsafe_allow_html=True)
+                    content = p.read_text()
+                    sz = fmt_size(p.stat().st_size)
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("Size", sz)
+                    c2.metric("Lines", len(content.splitlines()))
+                    c3.metric("Chars", len(content))
                     st.code(content if content else "(empty file)", language="text")
-                except Exception as e:
-                    msg(f"❌ Error: {e}", "error")
-
-    # ── 3. Update File ──────────────────────────────────────────────────────────
-    elif operation == "✏️ Update File":
-        st.subheader("Update a File")
-        items = [str(i) for i in get_all_items() if Path(i).is_file()]
-        if not items:
-            msg("No files available.", "warn")
-        else:
-            file_name  = st.selectbox("Select file to update", items)
-            update_mode = st.radio("Update mode", ["Overwrite", "Append"], horizontal=True)
-            new_content = st.text_area("New content", height=150)
-            if st.button("Update File"):
-                try:
-                    mode = 'w' if update_mode == "Overwrite" else 'a'
-                    with open(file_name, mode) as f:
-                        f.write(new_content)
-                    msg(f"✅ '{file_name}' updated ({update_mode.lower()})!")
-                    st.rerun()
-                except Exception as e:
-                    msg(f"❌ Error: {e}", "error")
-
-    # ── 4. Delete File ──────────────────────────────────────────────────────────
-    elif operation == "🗑️ Delete File":
-        st.subheader("Delete a File")
-        items = [str(i) for i in get_all_items() if Path(i).is_file()]
-        if not items:
-            msg("No files available.", "warn")
-        else:
-            file_name = st.selectbox("Select file to delete", items)
-            st.warning(f"⚠️ This will permanently delete **{file_name}**.")
-            if st.button("Delete File", type="primary"):
-                try:
-                    os.remove(file_name)
-                    msg(f"🗑️ '{file_name}' deleted.")
-                    st.rerun()
-                except Exception as e:
-                    msg(f"❌ Error: {e}", "error")
-
-    # ── 5. Rename File ──────────────────────────────────────────────────────────
-    elif operation == "🔤 Rename File":
-        st.subheader("Rename a File")
-        items = [str(i) for i in get_all_items() if Path(i).is_file()]
-        if not items:
-            msg("No files available.", "warn")
-        else:
-            file_name = st.selectbox("Select file to rename", items)
-            new_name  = st.text_input("New file name")
-            if st.button("Rename File"):
-                if not new_name:
-                    msg("⚠️ Enter a new name.", "warn")
                 else:
-                    try:
-                        Path(file_name).rename(new_name)
-                        msg(f"✅ Renamed to '{new_name}'!")
-                        st.rerun()
-                    except Exception as e:
-                        msg(f"❌ Error: {e}", "error")
+                    msg("FILE NOT FOUND!", "err")
+            except Exception as e:
+                msg(f"✗ {e}", "err")
 
-    # ── 6. Create Folder ────────────────────────────────────────────────────────
-    elif operation == "📁 Create Folder":
-        st.subheader("Create a New Folder")
-        folder_name = st.text_input("Folder name")
-        if st.button("Create Folder"):
+
+# ── 3. Update File ── (same as your update_file()) ───────────────────────────────
+elif operation == "3 · Update File":
+    st.subheader("Update File")
+    items = [str(i) for i in readfileandfolder() if Path(i).is_file()]
+    if not items:
+        msg("No files found", "warn")
+    else:
+        file_name   = st.selectbox("Select file to update", items)
+        update_mode = st.radio("press 1 = Overwrite  |  press 2 = Append",
+                               ["1 · Overwrite the content", "2 · Append the content"],
+                               horizontal=True)
+        content = st.text_area("Enter content to update", height=140)
+
+        if st.button("Update File"):
+            try:
+                p = Path(file_name)
+                if p.exists():
+                    mode = 'w' if update_mode.startswith("1") else 'a'
+                    with open(file_name, mode) as file:
+                        file.write(content)
+                    if update_mode.startswith("1"):
+                        msg("CONTENT CHANGED")
+                    else:
+                        msg("FILE UPDATED SUCCESSFULLY")
+                    st.rerun()
+                else:
+                    # your original creates the file if not found
+                    with open(file_name, 'w') as file:
+                        file.write(content)
+                    msg("FILE ADDED !")
+                    st.rerun()
+            except Exception as e:
+                msg(f"✗ {e}", "err")
+
+
+# ── 4. Delete File ── (same as your delete_file()) ───────────────────────────────
+elif operation == "4 · Delete File":
+    st.subheader("Delete File")
+    items = [str(i) for i in readfileandfolder() if Path(i).is_file()]
+    if not items:
+        msg("No files found", "warn")
+    else:
+        file_name = st.selectbox("Select file to delete", items)
+        st.warning(f"⚠ This will permanently delete **{file_name}**")
+        if st.button("Delete File", type="primary"):
+            try:
+                p = Path(file_name)
+                if p.exists():
+                    os.remove(p)
+                    msg("FILE DELETED")
+                    st.rerun()
+                else:
+                    msg("FILE DOES NOT EXIST", "err")
+            except Exception as e:
+                msg(f"✗ {e}", "err")
+
+
+# ── 5. Rename File ── (same as your rename_file()) ───────────────────────────────
+elif operation == "5 · Rename File":
+    st.subheader("Rename File")
+    items = [str(i) for i in readfileandfolder() if Path(i).is_file()]
+    if not items:
+        msg("No files found", "warn")
+    else:
+        file_name = st.selectbox("Select file to rename", items)
+        new_name  = st.text_input("Enter the new name of your file", placeholder="e.g. renamed.txt")
+        if st.button("Rename File"):
+            try:
+                p = Path(file_name)
+                if not new_name:
+                    msg("⚠ Enter a new name", "warn")
+                elif p.exists():
+                    p.rename(new_name)
+                    msg("FILE RENAMED!")
+                    st.rerun()
+                else:
+                    msg("FILE NOT FOUND!", "err")
+            except Exception as e:
+                msg(f"✗ {e}", "err")
+
+
+# ── 6. Create Folder ── (same as your create_folder()) ───────────────────────────
+elif operation == "6 · Create Folder":
+    st.subheader("Create Folder")
+    folder_name = st.text_input("Enter name of your folder", placeholder="e.g. my_folder")
+    if st.button("Create Folder"):
+        try:
+            p = Path(folder_name)
             if not folder_name:
-                msg("⚠️ Enter a folder name.", "warn")
+                msg("⚠ Enter a folder name", "warn")
+            elif p.exists():
+                msg("FOLDER ALREADY EXIST", "warn")
             else:
+                p.mkdir(parents=True)
+                msg("FOLDER CREATED!")
+                st.rerun()
+        except Exception as e:
+            msg(f"✗ {e}", "err")
+
+
+# ── 7. Rename Folder ── (same as your rename_folder()) ───────────────────────────
+elif operation == "7 · Rename Folder":
+    st.subheader("Rename Folder")
+    folders = [str(i) for i in readfileandfolder() if Path(i).is_dir()]
+    if not folders:
+        msg("No folders found", "warn")
+    else:
+        folder_name = st.selectbox("Select folder to rename", folders)
+        new_name    = st.text_input("Enter the new name of your folder", placeholder="e.g. new_folder")
+        if st.button("Rename Folder"):
+            try:
+                p = Path(folder_name)
+                if not new_name:
+                    msg("⚠ Enter a new name", "warn")
+                elif not p.exists():
+                    msg("FOLDER NOT FOUND!", "err")
+                else:
+                    new_path = p.parent / new_name
+                    if new_path.exists():
+                        msg("FOLDER WITH THAT NAME ALREADY EXISTS", "warn")
+                    else:
+                        p.rename(new_path)
+                        msg("FOLDER RENAMED!")
+                        st.rerun()
+            except Exception as e:
+                msg(f"✗ {e}", "err")
+
+
+# ── 8. Delete Folder ── (same as your delete_folder()) ───────────────────────────
+elif operation == "8 · Delete Folder":
+    st.subheader("Delete Folder")
+    folders = [str(i) for i in readfileandfolder() if Path(i).is_dir()]
+    if not folders:
+        msg("No folders found", "warn")
+    else:
+        folder_name = st.selectbox("Select folder to delete", folders)
+        st.warning(f"⚠ Folder must be **empty** to delete · permanently removes **{folder_name}**")
+        if st.button("Delete Folder", type="primary"):
+            try:
                 p = Path(folder_name)
                 if p.exists():
-                    msg("⚠️ Folder already exists!", "warn")
-                else:
-                    try:
-                        p.mkdir(parents=True)
-                        msg(f"✅ Folder '{folder_name}' created!")
-                        st.rerun()
-                    except Exception as e:
-                        msg(f"❌ Error: {e}", "error")
-
-    # ── 7. Read Folder ──────────────────────────────────────────────────────────
-    elif operation == "👁️‍🗨️ Read Folder":
-        st.subheader("Read a Folder")
-        folders = [str(i) for i in get_all_items() if Path(i).is_dir()]
-        if not folders:
-            msg("No folders available.", "warn")
-        else:
-            folder_name = st.selectbox("Select folder to inspect", folders)
-            if st.button("Read Folder"):
-                try:
-                    folder_path = Path(folder_name)
-                    all_contents = list(folder_path.rglob('*'))
-                    direct_contents = list(folder_path.iterdir())
-                    sub_dirs  = [x for x in direct_contents if x.is_dir()]
-                    files     = [x for x in direct_contents if x.is_file()]
-                    total_size = get_folder_size(folder_path)
-
-                    # Stats panel
-                    st.markdown(
-                        f'<div class="folder-stats">'
-                        f'📁 <span>{folder_name}</span> &nbsp;|&nbsp; '
-                        f'Direct items: <span>{len(direct_contents)}</span> &nbsp;|&nbsp; '
-                        f'Sub-folders: <span>{len(sub_dirs)}</span> &nbsp;|&nbsp; '
-                        f'Files: <span>{len(files)}</span> &nbsp;|&nbsp; '
-                        f'Total size: <span>{format_size(total_size)}</span>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-
-                    st.markdown('<div class="section-label">Direct Contents</div>', unsafe_allow_html=True)
-
-                    if not direct_contents:
-                        st.markdown('<div class="file-card">📭 Folder is empty</div>', unsafe_allow_html=True)
-                    else:
-                        for item in sorted(direct_contents):
-                            if item.is_dir():
-                                # Show sub-folder and its children
-                                sub_items = list(item.iterdir())
-                                label = f"📁 {item.name}/ &nbsp; <span style='color:#666;font-size:0.75rem'>({len(sub_items)} item{'s' if len(sub_items)!=1 else ''})</span>"
-                                st.markdown(f'<div class="file-card folder">{label}</div>', unsafe_allow_html=True)
-                                for sub in sorted(sub_items)[:10]:
-                                    icon = "📁" if sub.is_dir() else "📄"
-                                    size_str = format_size(sub.stat().st_size) if sub.is_file() else ""
-                                    st.markdown(
-                                        f'<div class="folder-contents-card">{icon} {sub.name}'
-                                        f'{"&nbsp;<span style=\'color:#666\'>(" + size_str + ")</span>" if size_str else ""}'
-                                        f'</div>',
-                                        unsafe_allow_html=True
-                                    )
-                                if len(sub_items) > 10:
-                                    st.markdown(
-                                        f'<div class="folder-contents-card" style="color:#666;">… and {len(sub_items)-10} more</div>',
-                                        unsafe_allow_html=True
-                                    )
-                            else:
-                                size_str = format_size(item.stat().st_size)
-                                st.markdown(
-                                    f'<div class="file-card file">📄 {item.name} &nbsp; '
-                                    f'<span style="color:#666;font-size:0.75rem">({size_str})</span></div>',
-                                    unsafe_allow_html=True
-                                )
-
-                    # Recursive summary
-                    if all_contents:
-                        all_files = [x for x in all_contents if x.is_file()]
-                        if all_files:
-                            st.markdown('<div class="section-label" style="margin-top:1.2rem;">All Files (Recursive)</div>', unsafe_allow_html=True)
-                            for f in sorted(all_files):
-                                rel = f.relative_to(folder_path)
-                                size_str = format_size(f.stat().st_size)
-                                st.markdown(
-                                    f'<div class="file-card file">📄 {rel} &nbsp;'
-                                    f'<span style="color:#666;font-size:0.75rem">({size_str})</span></div>',
-                                    unsafe_allow_html=True
-                                )
-
-                except Exception as e:
-                    msg(f"❌ Error: {e}", "error")
-
-    # ── 8. Update Folder ────────────────────────────────────────────────────────
-    elif operation == "📝 Update Folder":
-        st.subheader("Update a Folder")
-        st.caption("Move files into or out of a folder, or add a new sub-folder inside it.")
-
-        folders = [str(i) for i in get_all_items() if Path(i).is_dir()]
-        if not folders:
-            msg("No folders available.", "warn")
-        else:
-            folder_name = st.selectbox("Select target folder", folders)
-            tab1, tab2, tab3 = st.tabs(["➕ Add Sub-folder", "📥 Move File Into Folder", "📤 Move File Out of Folder"])
-
-            # Tab 1 — Add sub-folder
-            with tab1:
-                sub_name = st.text_input("Sub-folder name", key="sub_name")
-                if st.button("Create Sub-folder", key="create_sub"):
-                    if not sub_name:
-                        msg("⚠️ Enter a sub-folder name.", "warn")
-                    else:
-                        p = Path(folder_name) / sub_name
-                        if p.exists():
-                            msg("⚠️ Sub-folder already exists!", "warn")
-                        else:
-                            try:
-                                p.mkdir(parents=True)
-                                msg(f"✅ Sub-folder '{p}' created!")
-                                st.rerun()
-                            except Exception as e:
-                                msg(f"❌ Error: {e}", "error")
-
-            # Tab 2 — Move a file INTO the folder
-            with tab2:
-                all_files = [str(i) for i in get_all_items() if Path(i).is_file() and Path(i).parent != Path(folder_name)]
-                if not all_files:
-                    msg("No files outside this folder to move in.", "warn")
-                else:
-                    file_to_move = st.selectbox("Select file to move in", all_files, key="move_in_file")
-                    if st.button("Move File In", key="move_in_btn"):
-                        try:
-                            src = Path(file_to_move)
-                            dst = Path(folder_name) / src.name
-                            if dst.exists():
-                                msg(f"⚠️ '{dst}' already exists in the folder!", "warn")
-                            else:
-                                shutil.move(str(src), str(dst))
-                                msg(f"✅ '{src.name}' moved into '{folder_name}'!")
-                                st.rerun()
-                        except Exception as e:
-                            msg(f"❌ Error: {e}", "error")
-
-            # Tab 3 — Move a file OUT of the folder
-            with tab3:
-                inside_files = [str(i) for i in get_all_items()
-                                if Path(i).is_file() and str(Path(i)).startswith(folder_name + os.sep)]
-                if not inside_files:
-                    msg("No files inside this folder to move out.", "warn")
-                else:
-                    file_to_move = st.selectbox("Select file to move out", inside_files, key="move_out_file")
-                    dest_dir = st.text_input("Destination path (leave blank for current directory)", key="move_out_dest")
-                    if st.button("Move File Out", key="move_out_btn"):
-                        try:
-                            src = Path(file_to_move)
-                            dst_folder = Path(dest_dir) if dest_dir.strip() else Path('')
-                            dst = dst_folder / src.name
-                            if dst.exists():
-                                msg(f"⚠️ '{dst}' already exists at destination!", "warn")
-                            else:
-                                shutil.move(str(src), str(dst))
-                                msg(f"✅ '{src.name}' moved to '{dst_folder or '.'}'!")
-                                st.rerun()
-                        except Exception as e:
-                            msg(f"❌ Error: {e}", "error")
-
-    # ── 9. Rename Folder ────────────────────────────────────────────────────────
-    elif operation == "🔤 Rename Folder":
-        st.subheader("Rename a Folder")
-        folders = [str(i) for i in get_all_items() if Path(i).is_dir()]
-        if not folders:
-            msg("No folders available.", "warn")
-        else:
-            folder_name = st.selectbox("Select folder to rename", folders)
-            new_name    = st.text_input("New folder name")
-            st.info("ℹ️ The folder will be renamed in place. All contents are preserved.")
-            if st.button("Rename Folder"):
-                if not new_name:
-                    msg("⚠️ Enter a new name.", "warn")
-                elif new_name == folder_name:
-                    msg("⚠️ New name is the same as the current name.", "warn")
-                else:
-                    src = Path(folder_name)
-                    # Rename within the same parent directory
-                    dst = src.parent / new_name
-                    if dst.exists():
-                        msg(f"⚠️ A folder named '{new_name}' already exists!", "warn")
-                    else:
-                        try:
-                            src.rename(dst)
-                            msg(f"✅ Folder renamed from '{folder_name}' to '{new_name}'!")
-                            st.rerun()
-                        except Exception as e:
-                            msg(f"❌ Error: {e}", "error")
-
-    # ── 10. Delete Folder ────────────────────────────────────────────────────────
-    elif operation == "❌ Delete Folder":
-        st.subheader("Delete a Folder")
-        items = [str(i) for i in get_all_items() if Path(i).is_dir()]
-        if not items:
-            msg("No folders available.", "warn")
-        else:
-            folder_name  = st.selectbox("Select folder to delete", items)
-            delete_mode  = st.radio(
-                "Delete mode",
-                ["Empty folders only", "Force delete (including all contents)"],
-                horizontal=True
-            )
-            if delete_mode == "Empty folders only":
-                st.warning(f"⚠️ Folder must be **empty** to delete. This will permanently remove **{folder_name}**.")
-            else:
-                st.error(f"🚨 This will permanently delete **{folder_name}** and ALL its contents!")
-
-            if st.button("Delete Folder", type="primary"):
-                try:
-                    if delete_mode == "Empty folders only":
-                        Path(folder_name).rmdir()
-                    else:
-                        shutil.rmtree(folder_name)
-                    msg(f"🗑️ Folder '{folder_name}' deleted.")
+                    p.rmdir()
+                    msg("FOLDER DELETED!")
                     st.rerun()
-                except Exception as e:
-                    msg(f"❌ Error: {e}", "error")
+                else:
+                    msg("FOLDER NOT FOUND!", "err")
+            except Exception as e:
+                msg(f"✗ {e}", "err")
 
-    # ── 11. Create File in Folder ────────────────────────────────────────────────
-    elif operation == "📁➕ Create File in Folder":
-        st.subheader("Create a File inside a Folder")
-        folders = [str(i) for i in get_all_items() if Path(i).is_dir()]
 
-        tab1, tab2 = st.tabs(["Use existing folder", "Create new folder"])
+# ── 9. Create File in Folder ── (same as your create_file_in_folder()) ───────────
+elif operation == "9 · Create File in Folder":
+    st.subheader("Create File in Folder")
+    folders = [str(i) for i in readfileandfolder() if Path(i).is_dir()]
 
-        with tab1:
-            if not folders:
-                msg("No folders yet. Create one first or use the other tab.", "warn")
-            else:
-                folder_name = st.selectbox("Select folder", folders)
-                file_name   = st.text_input("File name", key="exist_fn")
-                content     = st.text_area("File content", height=120, key="exist_fc")
-                if st.button("Create File", key="exist_btn"):
+    tab1, tab2 = st.tabs(["Use Existing Folder", "Create New Folder"])
+
+    with tab1:
+        if not folders:
+            msg("No folders found — create one first or use the other tab", "warn")
+        else:
+            folder_name = st.selectbox("Select folder", folders, key="ef_folder")
+            file_name   = st.text_input("Enter the name of your file", key="ef_file", placeholder="e.g. notes.txt")
+            content     = st.text_area("Enter your file content", height=110, key="ef_content")
+            if st.button("Create File", key="ef_btn"):
+                try:
+                    p = Path(folder_name) / file_name
                     if not file_name:
-                        msg("⚠️ Enter a file name.", "warn")
+                        msg("⚠ Enter a file name", "warn")
+                    elif p.exists():
+                        msg("FILE ALREADY EXISTS", "warn")
                     else:
-                        p = Path(folder_name) / file_name
-                        if p.exists():
-                            msg("⚠️ File already exists!", "warn")
-                        else:
-                            try:
-                                p.write_text(content)
-                                msg(f"✅ '{p}' created!")
-                                st.rerun()
-                            except Exception as e:
-                                msg(f"❌ Error: {e}", "error")
+                        with open(p, 'w') as file:
+                            file.write(content)
+                        msg("CREATED SUCCESSFULLY")
+                        st.rerun()
+                except Exception as e:
+                    msg(f"✗ {e}", "err")
 
-        with tab2:
-            folder_name = st.text_input("New folder name", key="new_folder")
-            file_name   = st.text_input("File name", key="new_fn")
-            content     = st.text_area("File content", height=120, key="new_fc")
-            if st.button("Create Folder + File", key="new_btn"):
+    with tab2:
+        folder_name = st.text_input("Enter name of your folder", key="nf_folder", placeholder="e.g. my_folder")
+        file_name   = st.text_input("Enter the name of your file", key="nf_file", placeholder="e.g. notes.txt")
+        content     = st.text_area("Enter your file content", height=110, key="nf_content")
+        if st.button("Create Folder + File", key="nf_btn"):
+            try:
                 if not folder_name or not file_name:
-                    msg("⚠️ Enter both folder and file names.", "warn")
+                    msg("⚠ Enter both folder and file names", "warn")
                 else:
                     p = Path(folder_name) / file_name
                     if p.exists():
-                        msg("⚠️ File already exists!", "warn")
+                        msg("FILE ALREADY EXISTS", "warn")
                     else:
-                        try:
-                            p.parent.mkdir(parents=True, exist_ok=True)
-                            p.write_text(content)
-                            msg(f"✅ '{p}' created!")
-                            st.rerun()
-                        except Exception as e:
-                            msg(f"❌ Error: {e}", "error")
+                        Path(folder_name).mkdir(parents=True, exist_ok=True)
+                        with open(p, 'w') as file:
+                            file.write(content)
+                        msg("CREATED SUCCESSFULLY")
+                        st.rerun()
+            except Exception as e:
+                msg(f"✗ {e}", "err")

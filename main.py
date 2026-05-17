@@ -128,6 +128,26 @@ def create_folder():
     except Exception as e:
         print(e)
 
+
+def rename_folder():
+    try:
+        readfileandfolder()
+        folder_name = input('enter the name of your folder: ')
+        p = Path(folder_name)
+        if p.exists():
+            new_name = input('enter the new name of your folder: ')
+            new_path = p.parent / new_name
+            if new_path.exists():
+                print('FOLDER WITH THAT NAME ALREADY EXISTS')
+            else:
+                p.rename(new_path)
+                print('FOLDER RENAMED!')
+        else:
+            print('FOLDER NOT FOUND!')
+    except Exception as e:
+        print(e)
+
+
 def delete_folder():
     try:
 
@@ -170,8 +190,9 @@ while True:
     print("press 4 for deleting a file")
     print('press 5 for renaming a file')
     print("press 6 for creating a folder")
-    print("press 7 for deleting a folder")
-    print("press 8 for creating file and folder")
+    print("press 7 for renaming a folder")
+    print("press 8 for deleting a folder")
+    print("press 9 for creating file and folder")
     print('press 0 for exiting........')
 
 
@@ -192,10 +213,13 @@ while True:
     elif option == 6:
         create_folder()
 
-    elif option == 7:        
+    elif option == 7:
+        rename_folder()
+
+    elif option == 8:        
         delete_folder()
 
-    elif option == 8:
+    elif option == 9:
         create_file_in_folder()
 
 
