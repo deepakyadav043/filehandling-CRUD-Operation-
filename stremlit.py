@@ -44,14 +44,28 @@ html, body, [class*="css"], .stApp {
 }
 [data-testid="stSidebar"] > div:first-child { padding-top: 0; }
 [data-testid="stSidebar"] .stRadio { margin-top: 0.25rem; }
+
+/* Radio option labels — keep text visible */
 [data-testid="stSidebar"] .stRadio label {
     font-family: 'DM Mono', monospace !important;
-    font-size: 0.78rem !important;
-    color: #7a8ba6 !important;
-    letter-spacing: 0.3px;
-    padding: 0.15rem 0;
+    font-size: 0.76rem !important;
+    color: #6a7f99 !important;
+    letter-spacing: 0.2px !important;
+    padding: 0.22rem 0.1rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    transition: color 0.15s !important;
 }
-[data-testid="stSidebar"] .stRadio [data-testid="stMarkdownContainer"] p { display: none; }
+[data-testid="stSidebar"] .stRadio label:hover { color: #9ab5d0 !important; }
+/* Selected radio option */
+[data-testid="stSidebar"] .stRadio [aria-checked="true"] + label,
+[data-testid="stSidebar"] .stRadio label:has(input:checked) {
+    color: #63b3ed !important;
+}
+/* Hide the widget group label (the blank "" label above radio group) */
+[data-testid="stSidebar"] .stRadio > label { display: none !important; }
 
 /* ── Main content area ── */
 section[data-testid="stMain"] > div { padding: 1.5rem 2rem 2rem; position: relative; z-index: 1; }
@@ -333,9 +347,6 @@ section[data-testid="stMain"] > div { padding: 1.5rem 2rem 2rem; position: relat
     color: #63b3ed !important;
 }
 
-/* ── Radio ── */
-.stRadio [data-testid="stWidgetLabel"] { display: none !important; }
-
 /* ── Subheader ── */
 h2, h3 {
     font-family: 'Outfit', sans-serif !important;
@@ -380,8 +391,6 @@ hr { border-color: rgba(99,179,237,0.08) !important; margin: 0.75rem 0 !importan
     color: #3d5a80 !important;
 }
 
-/* ── Radio options styling ── */
-.stRadio [data-testid="stMarkdownContainer"] { display: none; }
 </style>
 """, unsafe_allow_html=True)
 
